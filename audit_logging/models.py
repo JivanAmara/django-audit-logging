@@ -19,6 +19,7 @@
 #########################################################################
 
 from django.db import models
+from django.forms.models import model_to_dict
 
 
 class AuditEvent(models.Model):
@@ -42,3 +43,9 @@ class AuditEvent(models.Model):
         verbose_name = 'audit event'
         verbose_name_plural = 'audit events'
         ordering = ['-datetime']
+
+    def __str__(self):
+        d = model_to_dict(self)
+        repr = ', '.join(['{}: {}'.format(field_name, field_value) for field_name, field_value in d.items()])
+        repr = 'AuditEvent({})'.format(repr)
+        return repr

@@ -23,7 +23,7 @@ import logging
 from django.contrib.auth import signals as auth_signals, get_user_model
 from django.db.models import signals as models_signals
 from .models import AuditEvent
-from .settings import AUDIT_TO_FILE
+from audit_logging.audit_settings import AUDIT_TO_FILE
 from .utils import (get_audit_crud_dict, get_audit_login_dict, get_time_gmt,
                     write_entry)
 
@@ -69,6 +69,7 @@ def post_save(sender, instance, created, raw, using, update_fields, **kwargs):
             audit_event.save()
     except Exception:
         logger.exception('audit had a post-save exception.')
+        raise
 
 
 def post_delete(sender, instance, using, **kwargs):

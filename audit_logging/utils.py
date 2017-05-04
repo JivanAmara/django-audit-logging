@@ -25,7 +25,7 @@ from time import gmtime, strftime
 
 from django.conf import settings
 
-from .settings import AUDIT_LOGFILE_LOCATION
+from audit_logging.audit_settings import AUDIT_LOGFILE_LOCATION
 
 
 logger = getLogger(__name__)
@@ -41,16 +41,20 @@ def configure_audit_models():
     if cached_return_value is not None:
         return cached_return_value
 
-    audit_model_specs = getattr(settings, 'AUDIT_MODELS', [])
+    audit_model_specs = getattr(settings, 'AUDIT_MODELS', {})
     if not audit_model_specs:
         logger.warn('No models specified for audit, you probably forgot to set AUDIT_MODELS.')
 
     audit_model_lookup = {}
     for dotted_path, resource_type in audit_model_specs.items():
-        model_to_audit = import_module(dotted_path)
+        print('{} - {}'.format(dotted_path, resource_type))
+        module_dotted_path, model_name = dotted_path.rsplit('.', 1)
+        model_module = import_module(module_dotted_path)
+        model_to_audit = getattr(model_module, model_name)
         audit_model_lookup.update({resource_type: model_to_audit})
 
     configure_audit_models.cached_return_value = audit_model_lookup
+    return audit_model_lookup
 
 
 def get_audit_crud_dict(instance, event):
@@ -100,9 +104,9 @@ def get_resource(instance):
 
     # create resource dict
     resource = {
-       "uuid": instance.uuid,
-       "title": instance.title,
-       "type": resource_type
+       "uuid": getattr(instance, 'uuid', None),
+       "id": getattr(instance, 'id', None),
+       "type": resource_type,
     }
     return resource
 
