@@ -104,8 +104,8 @@ def post_delete(sender, instance, using, **kwargs):
                 if d.get('resource').get('title'):
                     audit_event.resource_title = d['resource']['title']
             audit_event.save()
-    except Exception:
-        logger.exception('audit had a post-delete exception.')
+    except Exception as ex:
+        logger.exception('audit had a an exception for model post-delete: {}'.format(ex))
 
 
 def user_logged_in(sender, request, user, **kwargs):

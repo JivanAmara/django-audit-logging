@@ -46,7 +46,7 @@ def configure_audit_models():
         logger.warn('No models specified for audit, you probably forgot to set AUDIT_MODELS.')
 
     audit_model_lookup = {}
-    for dotted_path, resource_type in audit_model_specs.items():
+    for dotted_path, resource_type in audit_model_specs:
         print('{} - {}'.format(dotted_path, resource_type))
         module_dotted_path, model_name = dotted_path.rsplit('.', 1)
         model_module = import_module(module_dotted_path)

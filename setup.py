@@ -24,11 +24,12 @@ import os
 
 VERSION_FILEPATH = os.path.join(os.path.dirname(__file__), 'audit_logging', 'version')
 version = open(VERSION_FILEPATH, 'r').read()
-README = open('README.md').read()
+DIR = os.path.dirname(__file__)
+README = open(os.path.join(DIR, 'README.md')).read()
 
 setup(
     name='django-audit-logging',
-    version='0.0.1',
+    version=version,
     description="Logs events for auditing purposes.",
     long_description=README,
     classifiers=[
@@ -37,9 +38,10 @@ setup(
     author='Dan Berry / Jivan Amara',
     author_email='Development@JivanAmara.net',
     license='GPL',
-    packages=['audit_logging'],
+    packages=['audit_logging', 'audit_logging.migrations'],
     include_package_data=True,
+    package_data={'audit_logging': ['version']},
     install_requires=[
-        "Django >=1.8.7, < 1.10",
+        "Django >=1.8.7, <= 1.10",
     ],
 )

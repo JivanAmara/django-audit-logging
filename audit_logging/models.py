@@ -35,7 +35,7 @@ class AuditEvent(models.Model):
     superuser = models.NullBooleanField()
     staff = models.NullBooleanField()
     datetime = models.DateTimeField(auto_now_add=True)
-    resource_type = models.CharField(max_length=16, null=True, blank=True)
+    resource_type = models.CharField(max_length=32, null=True, blank=True)
     resource_uuid = models.CharField(max_length=64, null=True, blank=True)
     resource_title = models.CharField(max_length=255, null=True, blank=True)
 

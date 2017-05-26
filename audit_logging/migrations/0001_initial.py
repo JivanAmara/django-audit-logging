@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
                 ('staff', models.NullBooleanField()),
                 ('datetime', models.DateTimeField(auto_now_add=True)),
                 ('resource_type', models.CharField(
-                    max_length=16,
+                    max_length=32,
                     null=True,
                     blank=True
                 )),
