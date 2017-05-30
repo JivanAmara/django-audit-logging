@@ -69,6 +69,7 @@ def get_audit_crud_dict(instance, event):
             d['resource'] = get_resource(instance)
             d['event'] = event
             d['event_time_gmt'] = get_time_gmt()
+            d['id'] = getattr(instance, 'id', None)
             return d
 
 

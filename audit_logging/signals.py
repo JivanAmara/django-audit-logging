@@ -64,6 +64,8 @@ def post_save(sender, instance, created, raw, using, update_fields, **kwargs):
                     audit_event.resource_type = d['resource']['type']
                 if d.get('resource').get('uuid'):
                     audit_event.resource_uuid = d['resource']['uuid']
+                elif d.get('resource').get('id'):
+                    audit_event.resource_uuid = d['resource']['id']
                 if d.get('resource').get('title'):
                     audit_event.resource_title = d['resource']['title']
             audit_event.save()
