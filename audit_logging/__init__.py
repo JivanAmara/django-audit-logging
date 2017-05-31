@@ -17,5 +17,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 #########################################################################
+import os
 
 default_app_config = 'audit_logging.apps.AuditConfig'
+with open(os.path.join(os.path.dirname(__file__), 'version')) as f:
+    version = f.read()
+    version = version.strip()

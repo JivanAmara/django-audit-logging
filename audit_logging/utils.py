@@ -46,8 +46,9 @@ def configure_audit_models():
         logger.warn('No models specified for audit, you probably forgot to set AUDIT_MODELS.')
 
     audit_model_lookup = {}
+    logger.info('Registering models for auditing:')
     for dotted_path, resource_type in audit_model_specs:
-        print('{} - {}'.format(dotted_path, resource_type))
+        logger.info('{} recorded as {}'.format(dotted_path, resource_type))
         module_dotted_path, model_name = dotted_path.rsplit('.', 1)
         model_module = import_module(module_dotted_path)
         model_to_audit = getattr(model_module, model_name)
@@ -58,19 +59,22 @@ def configure_audit_models():
 
 
 def get_audit_crud_dict(instance, event):
-    """get audit crud details and return as dictionary"""
+    """ Get details for instance and return as dictionary
+        return None if the model isn't configured for auditing.
+    """
     audit_model_lookup = configure_audit_models()
-
+    d = {}
     for idx, item in enumerate(audit_model_lookup.values()):
         if isinstance(instance, item):
-            d = {}
-
             # populate resource details from instance
             d['resource'] = get_resource(instance)
             d['event'] = event
             d['event_time_gmt'] = get_time_gmt()
-            d['id'] = getattr(instance, 'id', None)
-            return d
+            break
+
+    logger.debug('CRUD details for {}: {}'.format(instance, d))
+
+    return d
 
 
 def get_audit_login_dict(request, user, event):
@@ -97,17 +101,40 @@ def get_time_gmt():
 
 def get_resource(instance):
     """get instance details and return as resource dictonary"""
+    # Check that instance is one of the models that's configured for logging
     audit_model_lookup = configure_audit_models()
+    resource_type = None
     for resource_type, model_type in audit_model_lookup.items():
         if isinstance(instance, model_type):
             resource_type = resource_type
             break
 
+    # Not one of the models configured for logging
+    if resource_type is None:
+        return {}
+
+    # Check for existence of each of these fields in order on instance until one is found or all are tried.
+    username_fields = ['user', 'owner', ]
+    username = None
+    for ufield in username_fields:
+        user = getattr(instance, ufield, None)
+        if user is not None:
+            username = getattr(user, 'username', None)
+            if username is not None:
+                break
+
+    id = None
+    id_fields = ['uuid', 'uid', 'id']
+    for id_field in id_fields:
+        id = getattr(instance, id_field, None)
+        if id is not None:
+            break
+
     # create resource dict
     resource = {
-       "uuid": getattr(instance, 'uuid', None),
-       "id": getattr(instance, 'id', None),
+       "id": id,
        "type": resource_type,
+       "username": username,
     }
     return resource
 

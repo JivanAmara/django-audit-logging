@@ -21,7 +21,6 @@
 from django.db import models
 from django.forms.models import model_to_dict
 
-
 class AuditEvent(models.Model):
     id = models.AutoField(verbose_name='ID',
                           serialize=False,
@@ -36,7 +35,7 @@ class AuditEvent(models.Model):
     staff = models.NullBooleanField()
     datetime = models.DateTimeField(auto_now_add=True)
     resource_type = models.CharField(max_length=32, null=True, blank=True)
-    resource_uuid = models.CharField(max_length=64, null=True, blank=True)
+    resource_uuid = models.CharField(max_length=255, null=True, blank=True)
     resource_title = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:

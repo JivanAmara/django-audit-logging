@@ -24,10 +24,54 @@ from django.contrib.auth import signals as auth_signals, get_user_model
 from django.db.models import signals as models_signals
 from .models import AuditEvent
 from audit_logging.audit_settings import AUDIT_TO_FILE
-from .utils import (get_audit_crud_dict, get_audit_login_dict, get_time_gmt,
-                    write_entry)
+from audit_logging import version as audit_logging_version
+from .utils import (get_audit_crud_dict, get_audit_login_dict, get_time_gmt, write_entry)
 
 logger = logging.getLogger(__name__)
+logger.info('Using audit_logging version: {}'.format(audit_logging_version.strip()))
+
+
+def log_event(instance, event=None):
+    if isinstance(instance, AuditEvent):
+        return
+
+    try:
+        d = get_audit_crud_dict(instance, event)
+        if d:
+            if AUDIT_TO_FILE:
+                write_entry(d)
+            audit_event = AuditEvent(
+                event=event
+            )
+            if d.get('user_details'):
+                logger.debug('got user_details from instance to log: {}'.format(d.get('user_details')))
+                if d.get('user_details').get('username'):
+                    audit_event.username = d['user_details']['username']
+                if d.get('user_details').get('email'):
+                    audit_event.email = d['user_details']['email']
+                if d.get('user_details').get('fullname'):
+                    audit_event.fullname = d['user_details']['fullname']
+                if d.get('user_details').get('superuser'):
+                    audit_event.superuser = d['user_details']['superuser']
+                if d.get('user_details').get('staff'):
+                    audit_event.staff = d['user_details']['staff']
+            if d.get('resource'):
+                logger.debug('got resource details from instance to log: {}'.format(d.get('resource')))
+                if d.get('resource').get('type'):
+                    audit_event.resource_type = d['resource']['type']
+                if d.get('resource').get('id'):
+                    logger.debug('setting resource_uuid to {}'.format(d['resource']['id']))
+                    audit_event.resource_uuid = d['resource']['id']
+                if d.get('resource').get('title'):
+                    audit_event.resource_title = d['resource']['title']
+                if d.get('resource').get('username'):
+                    audit_event.username = d['resource']['username']
+            audit_event.save()
+        else:
+            logger.warn('get_audit_crud_dict() returned nothing')
+    except Exception:
+        logger.exception('Exception during audit event.')
+        raise
 
 
 def post_save(sender, instance, created, raw, using, update_fields, **kwargs):
@@ -35,79 +79,26 @@ def post_save(sender, instance, created, raw, using, update_fields, **kwargs):
     signal to catch save signals (create and update) and log them in
     the audit log.
     """
-    try:
-        if created:
-            event = 'create'
-        else:
-            event = 'update'
-        d = get_audit_crud_dict(instance, event)
-        if d:
-            logger.debug(d)
-            if AUDIT_TO_FILE:
-                write_entry(d)
-            audit_event = AuditEvent(
-                event=event
-            )
-            if d.get('user_details'):
-                if d.get('user_details').get('username'):
-                    audit_event.username = d['user_details']['username']
-                if d.get('user_details').get('email'):
-                    audit_event.email = d['user_details']['email']
-                if d.get('user_details').get('fullname'):
-                    audit_event.fullname = d['user_details']['fullname']
-                if d.get('user_details').get('superuser'):
-                    audit_event.superuser = d['user_details']['superuser']
-                if d.get('user_details').get('staff'):
-                    audit_event.staff = d['user_details']['staff']
-            if d.get('resource'):
-                if d.get('resource').get('type'):
-                    audit_event.resource_type = d['resource']['type']
-                if d.get('resource').get('uuid'):
-                    audit_event.resource_uuid = d['resource']['uuid']
-                elif d.get('resource').get('id'):
-                    audit_event.resource_uuid = d['resource']['id']
-                if d.get('resource').get('title'):
-                    audit_event.resource_title = d['resource']['title']
-            audit_event.save()
-    except Exception:
-        logger.exception('audit had a post-save exception.')
-        raise
+    if isinstance(instance, AuditEvent):
+        return
+    logger.info('Received post_save signal for: {} ({})'.format(instance, type(instance)))
+
+    if created:
+        event = 'create'
+    else:
+        event = 'update'
+    log_event(instance, event)
 
 
 def post_delete(sender, instance, using, **kwargs):
     """
     signal to catch delete signals and log them in the audit log
     """
-    try:
-        d = get_audit_crud_dict(instance, 'delete')
-        if d:
-            logger.debug(d)
-            if AUDIT_TO_FILE:
-                write_entry(d)
-            audit_event = AuditEvent(
-                event='delete'
-            )
-            if d.get('user_details'):
-                if d.get('user_details').get('username'):
-                    audit_event.username = d['user_details']['username']
-                if d.get('user_details').get('email'):
-                    audit_event.email = d['user_details']['email']
-                if d.get('user_details').get('fullname'):
-                    audit_event.fullname = d['user_details']['fullname']
-                if d.get('user_details').get('superuser'):
-                    audit_event.superuser = d['user_details']['superuser']
-                if d.get('user_details').get('staff'):
-                    audit_event.staff = d['user_details']['staff']
-            if d.get('resource'):
-                if d.get('resource').get('type'):
-                    audit_event.resource_type = d['resource']['type']
-                if d.get('resource').get('uuid'):
-                    audit_event.resource_uuid = d['resource']['uuid']
-                if d.get('resource').get('title'):
-                    audit_event.resource_title = d['resource']['title']
-            audit_event.save()
-    except Exception as ex:
-        logger.exception('audit had a an exception for model post-delete: {}'.format(ex))
+    if isinstance(instance, AuditEvent):
+        return
+    logger.info('Received post_delete signal for: {} ({})'.format(instance, type(instance)))
+
+    log_event(instance, 'delete')
 
 
 def user_logged_in(sender, request, user, **kwargs):
@@ -117,7 +108,6 @@ def user_logged_in(sender, request, user, **kwargs):
     try:
         event = 'login'
         d = get_audit_login_dict(request, user, event)
-        logger.debug(d)
         if d:
             if AUDIT_TO_FILE:
                 write_entry(d)
@@ -142,7 +132,6 @@ def user_logged_out(sender, request, user, **kwargs):
     try:
         event = 'logout'
         d = get_audit_login_dict(request, user, event)
-        logger.debug(d)
         if d:
             if AUDIT_TO_FILE:
                 write_entry(d)
@@ -172,7 +161,6 @@ def user_login_failed(sender, credentials, **kwargs):
             "event": event,
             "username": credentials[user_model.USERNAME_FIELD],
         }
-        logger.debug(d)
         if AUDIT_TO_FILE:
             write_entry(d)
         login_event = AuditEvent(
