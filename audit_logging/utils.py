@@ -41,7 +41,7 @@ def configure_audit_models():
     if cached_return_value is not None:
         return cached_return_value
 
-    audit_model_specs = getattr(settings, 'AUDIT_MODELS', {})
+    audit_model_specs = getattr(settings, 'AUDIT_MODELS', [])
     if not audit_model_specs:
         logger.warn('No models specified for audit, you probably forgot to set AUDIT_MODELS.')
 

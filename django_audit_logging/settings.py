@@ -16,7 +16,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # "testmodel" is the string recorded as the resource type when logging events for TestModel.
-AUDIT_MODELS = {'audit_logging_tests.models.TestModel': 'TestModel'}
+AUDIT_MODELS = [('audit_logging_tests.models.TestModel', 'TestModel'), ]
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
