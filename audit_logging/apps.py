@@ -17,7 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 #########################################################################
-
 from django.apps import AppConfig
 
 
@@ -26,12 +25,4 @@ class AuditConfig(AppConfig):
     verbose_name = 'Logging to provide file/django model CRUD audit trail'
 
     def ready(self):
-        # Override built-in open() with the logging version.
-        try:
-            import __builtin__ as builtins  # Python 2
-        except ImportError:
-            import builtins  # Python 3
-        from audit_logging.file_logging import open as logging_open
-        builtins.open = logging_open
-
         import audit_logging.signals  # noqa

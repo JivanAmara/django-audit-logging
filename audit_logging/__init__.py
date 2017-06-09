@@ -20,6 +20,7 @@
 import os
 
 default_app_config = 'audit_logging.apps.AuditConfig'
+version = 'unknown'
 with open(os.path.join(os.path.dirname(__file__), 'version')) as f:
     version = f.read()
     version = version.strip()

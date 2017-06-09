@@ -1,6 +1,5 @@
 """ Provides alterntive open() & File objects which log create/read/update/delete.
 """
-from __builtin__ import open as standard_open
 import os
 from audit_logging.models import AuditEvent
 import logging
@@ -13,21 +12,15 @@ def log_event(event=None, resource_type='file', resource_uuid=None):
     try:
         AuditEvent.objects.create(event=event, resource_type=resource_type, resource_uuid=resource_uuid)
     except Exception as ex:
-        msg = 'Unable to log file event'
-        tname = AuditEvent._meta.db_table
-        if tname not in connection.introspection.table_names():
-            msg += ', table {} for model AuditEvent not found, has the project been migrated?'.format(tname)
-        else:
-            msg += ' due to exception: {}.'.format(ex)
-        logger.error(msg)
+        pass
 
 
-def open(filepath, *args):
+def logging_open(filepath, *args):
     """ Equivalent of builtin open() which logs file creation to AuditEvent if appropriate and returns a LoggingFile
         instead of regular file-like object.
     """
     exists_before = os.path.exists(filepath)
-    res = standard_open(filepath, *args)
+    res = open(filepath, *args)
     res = LoggingFile(res)
     exists_after = os.path.exists(filepath)
 
