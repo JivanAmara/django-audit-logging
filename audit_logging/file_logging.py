@@ -4,6 +4,8 @@ import os
 from audit_logging.models import AuditEvent
 import logging
 from django.db import connection
+from django.conf import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +23,13 @@ def logging_open(filepath, *args):
     """
     exists_before = os.path.exists(filepath)
     res = open(filepath, *args)
-    res = LoggingFile(res)
-    exists_after = os.path.exists(filepath)
 
-    if not exists_before and exists_after:
-        log_event(event='FileCreate', resource_type='file', resource_uuid=filepath)
+    if getattr(settings, 'AUDIT_FILE_EVENTS', True):
+        res = LoggingFile(res)
+        exists_after = os.path.exists(filepath)
+
+        if not exists_before and exists_after:
+            log_event(event='FileCreate', resource_type='file', resource_uuid=filepath)
 
     return res
 

@@ -28,7 +28,7 @@ from audit_logging import version as audit_logging_version
 from .utils import (get_audit_crud_dict, get_audit_login_dict, get_time_gmt, write_entry)
 
 logger = logging.getLogger(__name__)
-logger.info('Using audit_logging version: {}'.format(audit_logging_version.strip()))
+logger.info('Using audit_logging version: {}'.format(audit_logging_version))
 
 
 def log_event(instance, event=None):
@@ -73,7 +73,7 @@ def log_event(instance, event=None):
             resource_uuid = resource.get('id', 'unknown') if resource else 'unknown'
             log_event(event=event, resource_type=resource_type, resource_uuid=resource_uuid)
         else:
-            logger.warn('get_audit_crud_dict() returned nothing')
+            logger.debug('get_audit_crud_dict() returned nothing (normal if {} not in AUDIT_MODELS)'.format(instance))
     except Exception as ex:
         logger.exception('Exception during audit event.')
 
@@ -85,7 +85,7 @@ def post_save(sender, instance, created, raw, using, update_fields, **kwargs):
     """
     if isinstance(instance, AuditEvent):
         return
-    logger.info('Received post_save signal for: {} ({})'.format(instance, type(instance)))
+    logger.debug('Received post_save signal for: {} ({})'.format(instance, type(instance)))
 
     if created:
         event = 'create'
@@ -100,7 +100,7 @@ def post_delete(sender, instance, using, **kwargs):
     """
     if isinstance(instance, AuditEvent):
         return
-    logger.info('Received post_delete signal for: {} ({})'.format(instance, type(instance)))
+    logger.debug('Received post_delete signal for: {} ({})'.format(instance, type(instance)))
 
     log_event(instance, 'delete')
 

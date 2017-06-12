@@ -2,7 +2,7 @@
 from tempfile import NamedTemporaryFile
 from django.test import TestCase
 import os
-from audit_logging.file_logging import open, LoggingFile
+from audit_logging.file_logging import logging_open, LoggingFile
 from mock import patch
 
 
@@ -11,7 +11,7 @@ class LoggingOpenTests(TestCase):
     @patch('audit_logging.file_logging.AuditEvent')
     def test_open_existing(self, AuditEvent):
         with NamedTemporaryFile() as f:
-            f2 = open(f.name)
+            f2 = logging_open(f.name)
             self.assertIsInstance(f2, LoggingFile)
             f2.close()
             self.assertEqual(AuditEvent.objects.create.call_count, 0)
@@ -21,7 +21,7 @@ class LoggingOpenTests(TestCase):
         with NamedTemporaryFile() as f:
             fname = f.name
         self.assertFalse(os.path.exists(fname))
-        with open(fname, 'w') as f:
+        with logging_open(fname, 'w') as f:
             self.assertEqual(AuditEvent.objects.create.call_count, 1)
 
 
