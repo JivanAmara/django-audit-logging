@@ -10,26 +10,35 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def log_event(event=None, resource_type='file', resource_uuid=None):
+def log_event(event=None, resource_type='file', resource_uuid=None, user_details=None):
     try:
-        AuditEvent.objects.create(event=event, resource_type=resource_type, resource_uuid=resource_uuid)
+        username = user_details.get('username') if user_details else None
+        is_superuser = user_details.get('is_superuser') if user_details else None
+        is_staff = user_details.get('is_staff') if user_details else None
+        AuditEvent.objects.create(
+            event=event, resource_type=resource_type, resource_uuid=resource_uuid, username=username,
+            superuser=is_superuser, staff=is_staff
+        )
     except Exception as ex:
         pass
 
 
-def logging_open(filepath, *args):
+def logging_open(filepath, mode='r', user_details=None):
     """ Equivalent of builtin open() which logs file creation to AuditEvent if appropriate and returns a LoggingFile
         instead of regular file-like object.
     """
     exists_before = os.path.exists(filepath)
-    res = open(filepath, *args)
+    res = open(filepath, mode)
 
     if getattr(settings, 'AUDIT_FILE_EVENTS', True):
-        res = LoggingFile(res)
+        res = LoggingFile(res, user_details)
         exists_after = os.path.exists(filepath)
 
         if not exists_before and exists_after:
-            log_event(event='FileCreate', resource_type='file', resource_uuid=filepath)
+            # This is just to make it easier to trace when user_details haven't been sent
+            if user_details is None:
+                user_details = {'username': 'unknown-logging_open'}
+            log_event(event='FileCreate', resource_type='file', resource_uuid=filepath, user_details=user_details)
 
     return res
 
@@ -37,45 +46,62 @@ def logging_open(filepath, *args):
 class LoggingFile(object):
     """ Wraps a regular file-like object so that reads/writes are logged to AuditEvent.
     """
-    regular_file = None
     AuditEvent = None
 
-    def __init__(self, regular_file):
+    def __init__(self, regular_file, user_details):
         """ regular_file should be an open file-like object
         """
         # Import AuditEvent here so this module can be imported before django apps are ready
         from audit_logging.models import AuditEvent
         self.AuditEvent = AuditEvent
         self.regular_file = regular_file
+        self.user_details = user_details
 
     def write(self, *args, **kwargs):
         res = self.regular_file.write(*args, **kwargs)
-        log_event(event='FileWrite', resource_type='file', resource_uuid=self.regular_file.name)
+        log_event(
+            event='FileWrite', resource_type='file', resource_uuid=self.regular_file.name,
+            user_details=self.user_details
+        )
         return res
 
     def writelines(self, *args, **kwargs):
         res = self.regular_file.writelines(*args, **kwargs)
-        log_event(event='FileWrite', resource_type='file', resource_uuid=self.regular_file.name)
+        log_event(
+            event='FileWrite', resource_type='file', resource_uuid=self.regular_file.name,
+            user_details=self.user_details
+        )
         return res
 
     def truncate(self, *args, **kwargs):
         res = self.regular_file.truncate(*args, **kwargs)
-        log_event(event='FileWrite', resource_type='file', resource_uuid=self.regular_file.name)
+        log_event(
+            event='FileWrite', resource_type='file', resource_uuid=self.regular_file.name,
+            user_details=self.user_details
+        )
         return res
 
     def read(self, *args, **kwargs):
         res = self.regular_file.read(*args, **kwargs)
-        log_event(event='FileRead', resource_type='file', resource_uuid=self.regular_file.name)
+        log_event(
+            event='FileRead', resource_type='file', resource_uuid=self.regular_file.name,
+            user_details=self.user_details
+        )
         return res
 
     def readline(self, *args, **kwargs):
         res = self.regular_file.readline(*args, **kwargs)
-        log_event(event='FileRead', resource_type='file', resource_uuid=self.regular_file.name)
+        log_event(
+            event='FileRead', resource_type='file', resource_uuid=self.regular_file.name,
+            user_details=self.user_details
+        )
         return res
 
     def readlines(self, *args, **kwargs):
         res = self.regular_file.readlines(*args, **kwargs)
-        log_event(event='FileRead', resource_type='file', resource_uuid=self.regular_file.name)
+        log_event(event='FileRead', resource_type='file', resource_uuid=self.regular_file.name,
+            user_details=self.user_details
+        )
         return res
 
     def __enter__(self, *args, **kwargs):

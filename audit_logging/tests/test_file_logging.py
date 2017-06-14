@@ -40,7 +40,7 @@ class LoggingFileTests(TestCase):
     @patch('audit_logging.file_logging.AuditEvent')
     def test_log_on_method_call(self, AuditEvent):
         with NamedTemporaryFile() as tf:
-            lf = LoggingFile(tf)
+            lf = LoggingFile(tf, user_details={'username': 'test_log_on_method_call'})
 
             for method, arg in self.logging_methods:
                 AuditEvent.reset_mock()
