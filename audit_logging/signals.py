@@ -25,7 +25,10 @@ from django.db.models import signals as models_signals
 from .models import AuditEvent
 from audit_logging.audit_settings import AUDIT_TO_FILE
 from audit_logging import version as audit_logging_version
-from .utils import (get_audit_crud_dict, get_audit_login_dict, get_time_gmt, write_entry)
+from audit_logging.utils import (
+    get_audit_crud_dict, get_audit_login_dict, get_time_gmt, write_entry, audit_logging_thread_local
+)
+
 
 logger = logging.getLogger(__name__)
 logger.info('Using audit_logging version: {}'.format(audit_logging_version))
@@ -67,11 +70,13 @@ def log_event(instance, event=None):
 #                 if d.get('resource').get('username'):
 #                     audit_event.username = d['resource']['username']
 #             audit_event.save()
-            from audit_logging.file_logging import log_event
+            from audit_logging.utils import log_event
+            user_details = audit_logging_thread_local.user_details
+            logger.debug('Got user_details from audit_logging_thread_local: {} ')
             resource = d.get('resource')
             resource_type = resource.get('type', 'unknown') if resource else 'unknown'
             resource_uuid = resource.get('id', 'unknown') if resource else 'unknown'
-            log_event(event=event, resource_type=resource_type, resource_uuid=resource_uuid)
+            log_event(event=event, resource_type=resource_type, resource_uuid=resource_uuid, user_details=user_details)
         else:
             logger.debug('get_audit_crud_dict() returned nothing (normal if {} not in AUDIT_MODELS)'.format(instance))
     except Exception as ex:

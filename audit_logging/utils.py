@@ -26,9 +26,25 @@ from time import gmtime, strftime
 from django.conf import settings
 
 from audit_logging.audit_settings import AUDIT_LOGFILE_LOCATION
+import threading
 
 
 logger = getLogger(__name__)
+audit_logging_thread_local = threading.local()
+
+
+def log_event(event=None, resource_type='file', resource_uuid=None, user_details=None):
+    try:
+        from audit_logging.models import AuditEvent
+        username = user_details.get('username') if user_details else None
+        is_superuser = user_details.get('is_superuser') if user_details else None
+        is_staff = user_details.get('is_staff') if user_details else None
+        AuditEvent.objects.create(
+            event=event, resource_type=resource_type, resource_uuid=resource_uuid, username=username,
+            superuser=is_superuser, staff=is_staff
+        )
+    except Exception as ex:
+        pass
 
 
 def configure_audit_models():
