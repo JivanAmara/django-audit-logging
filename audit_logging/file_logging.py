@@ -5,22 +5,10 @@ from audit_logging.models import AuditEvent
 import logging
 from django.db import connection
 from django.conf import settings
+from audit_logging.utils import log_event
 
 
 logger = logging.getLogger(__name__)
-
-
-def log_event(event=None, resource_type='file', resource_uuid=None, user_details=None):
-    try:
-        username = user_details.get('username') if user_details else None
-        is_superuser = user_details.get('is_superuser') if user_details else None
-        is_staff = user_details.get('is_staff') if user_details else None
-        AuditEvent.objects.create(
-            event=event, resource_type=resource_type, resource_uuid=resource_uuid, username=username,
-            superuser=is_superuser, staff=is_staff
-        )
-    except Exception as ex:
-        pass
 
 
 def logging_open(filepath, mode='r', user_details=None):
