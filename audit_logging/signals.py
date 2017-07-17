@@ -71,7 +71,7 @@ def log_event(instance, event=None):
 #                     audit_event.username = d['resource']['username']
 #             audit_event.save()
             from audit_logging.utils import log_event
-            user_details = audit_logging_thread_local.user_details
+            user_details = getattr(audit_logging_thread_local, 'user_details', {})
             logger.debug('Got user_details from audit_logging_thread_local: {} ')
             resource = d.get('resource')
             resource_type = resource.get('type', 'unknown') if resource else 'unknown'
