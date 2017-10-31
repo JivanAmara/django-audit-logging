@@ -47,10 +47,6 @@ class LoggingFile(object):
 
     def write(self, *args, **kwargs):
         res = self.regular_file.write(*args, **kwargs)
-        log_event(
-            event='FileWrite', resource_type='file', resource_uuid=self.regular_file.name,
-            user_details=self.user_details
-        )
         return res
 
     def writelines(self, *args, **kwargs):
@@ -93,6 +89,10 @@ class LoggingFile(object):
         return res
 
     def __enter__(self, *args, **kwargs):
+        log_event(
+            event='FileWrite', resource_type='file', resource_uuid=self.regular_file.name,
+            user_details=self.user_details
+        )
         return self
 
     def __exit__(self, *args, **kwargs):
